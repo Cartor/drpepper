@@ -30,8 +30,9 @@ Robot = function(isRealRobot) {
 
 Robot.prototype.connect = function(ipAddress) {
   if (this.ipAddress != ipAddress || this.session == null) {
+    var resource = "drpepper/js/qimessaging/1.0/socket.io";
     this.ipAddress = ipAddress;
-    this.session = new QiSession(ipAddress);
+    this.session = new QiSession(ipAddress, resource);
   }
 };
 
