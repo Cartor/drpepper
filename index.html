@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <title>Dr.Pepper</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="css/c3.min.css" rel="stylesheet" type="text/css">
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Dr.Pepper</a>
+        </div>
+        <div id="navbar" class="collapse navbar-collapse">
+          <form class="navbar-form navbar-right">
+            <div class="form-group">
+              <input id="ip_address" class="form-control" type="text" placeholder="IP Address">
+            </div>
+            <button id="btn-start" type="button" class="btn btn-default">
+              <span class="glyphicon glyphicon-play" aria-hidden="true"></span> Start
+            </button>
+            <button id="btn-stop" type="button" class="btn btn-default">
+              <span class="glyphicon glyphicon-stop" aria-hidden="true"></span> Stop
+            </button>
+          </form>
+        </div>
+      </div>
+    </nav>
+
+    <div class="row" style="margin-top: 60px;">
+      <div class="col-sm-6">
+        <div id="chartHead"></div>
+      </div>
+      <div class="col-sm-6">
+        <div id="chartHip"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-sm-6">
+        <div id="chartL"></div>
+      </div>
+      <div class="col-sm-6">
+        <div id="chartR"></div>
+      </div>
+    </div>
+
+    <script src="js/jquery-2.1.3.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/underscore-min.js"></script>
+    <script src="js/d3.min.js"></script>
+    <script src="js/c3.min.js"></script>
+    <script src="js/qimessaging/1.0/qimessaging.js"></script>
+    <script src="js/dr_pepper.js"></script>
+
+    <script>
+var isRunning = false;
+var chart = {};
+var columns = {};
+
+var robot = new Robot(false);
+var partList = ["Head", "R", "L", "Hip"];
+
+function initChart(part) {
+  chart[part] = c3.generate({
+    bindto: "#chart" + part,
+    data: {
+      columns: columns[part]
+    },
+    axis: {
+      y: {
+        label: {
+          text: "Temperature(°C)"
+        }
+      }
+    }
+  });
+}
+
+var maxValue = 0;
+function updateChart(part) {
+  chart[part].load({
+    columns: columns[part]
+  });
+  chart[part].flush();
+
+  for (var i = 0; i < columns[part].length; i++) {
+    var actuator = columns[part][i][0];
+    robot.getTemperature(actuator, function(actuator, value) {
+      for (var j = 0; j < columns[part].length; j++) {
+        if (columns[part][j][0] == actuator) {
+          columns[part][j].push(value);
+
+          if (maxValue < value) {
+            maxValue = value;
+          }
+
+          if (columns[part][j].length >= 10) {
+            var name = columns[part][j].shift();
+            var first = columns[part][j].shift();
+            columns[part][j].unshift(name);
+          }
+
+          break;
+        }
+      }
+    });
+  }
+
+  if (isRunning) {
+    setTimeout("updateChart('" + part + "')", 3000);
+  }
+}
+
+$(function() {
+  _.each(partList, function(part) {
+    columns[part] = [];
+
+    var actuatorList = _.filter(Robot.actuatorList, function(actuator) {
+      return actuator.match(new RegExp("^" + part));
+    });
+
+    _.each(actuatorList, function(actuator) {
+      columns[part].push([actuator, 0]);
+    });
+
+    initChart(part);
+  });
+});
+
+$("#btn-start").click(function() {
+  robot.connect($("#ip_address").text());
+
+  isRunning = true;
+  _.each(partList, function(part) {
+    updateChart(part);
+  });
+});
+
+$("#btn-stop").click(function() {
+  isRunning = false;
+  _.each(partList, function(part) {
+    updateChart(part);
+  });
+});
+    </script>
+  </body>
+</html>
