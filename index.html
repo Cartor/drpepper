@@ -136,7 +136,8 @@ $(function() {
 });
 
 $("#btn-start").click(function() {
-  robot.connect($("#ip_address").val());
+//  robot.connect($("#ip_address").val());
+  robot.connect("192.168.3.49");
 
   isRunning = true;
   _.each(partList, function(part) {

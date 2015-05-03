@@ -40,12 +40,12 @@ Robot.prototype._getMemoryKey = function(actuator) {
 };
 
 Robot.prototype.getTemperature = function(actuator, handler) {
+  var robot = this;
   if (this.isRealRobot) {
     this.session.service("ALMemory").done(function(memory) {
-      var value = memory.getData(this._getMemoryKey(actuator));
-      handler(actuator, value);
-    }).fail(function(error) {
-	    handler(actuator, 0);
+      memory.getData(robot._getMemoryKey(actuator)).done(function(value) {
+        handler(actuator, value);
+      });
     });
 
   } else {
